@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Selective Site Blocker",
+  "version": "1.0",
+  "description": "Block distracting websites while allowing specific useful pages",
+  "permissions": [
+    "declarativeNetRequest",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Selective Site Blocker"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "blocking_rules",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  }
+}
