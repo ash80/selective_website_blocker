@@ -90,7 +90,7 @@ async function addBlockRule() {
     action: {
       type: "redirect",
       redirect: {
-        url: "data:text/html,<html><head><title>Site Blocked</title></head><body style='font-family:Arial,sans-serif;text-align:center;padding:50px;background:#f5f5f5'><h1 style='color:#e74c3c'>Site Blocked</h1><p>This site is blocked to help you stay focused.</p></body></html>"
+        extensionPath: "/blocked.html"
       }
     },
     condition: {
