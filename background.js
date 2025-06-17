@@ -46,7 +46,7 @@ const defaultRules = [
       "type": "allow"
     },
     "condition": {
-      "urlFilter": "*reddit.com/r/MachineLearning*",
+      "urlFilter": "*reddit.com/r/*",
       "resourceTypes": ["main_frame"]
     }
   }
