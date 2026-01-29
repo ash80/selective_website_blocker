@@ -3,6 +3,9 @@
   "name": "Selective Site Blocker",
   "version": "1.0",
   "description": "Block distracting websites while allowing specific useful pages",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
   "permissions": [
     "declarativeNetRequest",
     "storage"

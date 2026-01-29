@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Add event listeners
   document.getElementById('addBlockBtn').addEventListener('click', addBlockRule);
   document.getElementById('addAllowBtn').addEventListener('click', addAllowRule);
+  document.getElementById('toggleDisableBtn').addEventListener('click', toggleDisableBlocker);
   
   // Handle Enter key in input fields
   document.getElementById('blockUrl').addEventListener('keypress', (e) => {
@@ -17,6 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('allowUrl').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') addAllowRule();
   });
+  
+  // Load disable status
+  loadDisableStatus();
 });
 
 async function loadRules() {
@@ -158,10 +162,101 @@ async function saveAndUpdateRules() {
 
 function showStatus(message, type) {
   const status = document.getElementById('status');
-  status.innerHTML = `<div class="status ${type}">${message}</div>`;
+  
+  // Clear previous status
+  status.innerHTML = '';
+  
+  // Create element safely
+  const statusDiv = document.createElement('div');
+  statusDiv.className = `status ${type}`;
+  statusDiv.textContent = message;
+  
+  status.appendChild(statusDiv);
   
   // Clear status after 3 seconds
   setTimeout(() => {
     status.innerHTML = '';
   }, 3000);
+}
+
+async function loadDisableStatus() {
+  try {
+    const result = await chrome.storage.sync.get(['disableUntil']);
+    const disableUntil = result.disableUntil || 0;
+    const now = Date.now();
+    
+    const toggleBtn = document.getElementById('toggleDisableBtn');
+    
+    if (disableUntil > now) {
+      // Currently disabled
+      toggleBtn.textContent = 'Enable Blocker';
+      toggleBtn.style.background = '#4CAF50';
+      
+      // Calculate remaining time
+      const remainingMinutes = Math.ceil((disableUntil - now) / (60 * 1000));
+      const statusMessage = `Blocker disabled for ${remainingMinutes} more minutes`;
+      
+      // Show status using textContent instead of innerHTML
+      const statusDiv = document.createElement('div');
+      statusDiv.className = 'status success';
+      statusDiv.textContent = statusMessage;
+      
+      const statusContainer = document.getElementById('status');
+      statusContainer.innerHTML = '';
+      statusContainer.appendChild(statusDiv);
+      
+      // Clear status after 3 seconds
+      setTimeout(() => {
+        statusContainer.innerHTML = '';
+      }, 3000);
+    } else {
+      // Currently enabled
+      toggleBtn.textContent = 'Disable Blocker';
+      toggleBtn.style.background = '#f44336';
+    }
+  } catch (error) {
+    console.error('Error loading disable status:', error);
+    
+    // Show error status safely
+    const statusContainer = document.getElementById('status');
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'status error';
+    errorDiv.textContent = 'Error loading disable status';
+    statusContainer.innerHTML = '';
+    statusContainer.appendChild(errorDiv);
+    
+    setTimeout(() => {
+      statusContainer.innerHTML = '';
+    }, 3000);
+  }
+}
+
+async function toggleDisableBlocker() {
+  try {
+    const result = await chrome.storage.sync.get(['disableUntil']);
+    const disableUntil = result.disableUntil || 0;
+    const now = Date.now();
+    
+    if (disableUntil > now) {
+      // Currently disabled, enable it
+      await chrome.storage.sync.set({ disableUntil: 0 });
+      await chrome.runtime.sendMessage({ action: 'enableBlocker' });
+      
+      document.getElementById('toggleDisableBtn').textContent = 'Disable Blocker';
+      document.getElementById('toggleDisableBtn').style.background = '#f44336';
+      showStatus('Blocker enabled!', 'success');
+    } else {
+      // Currently enabled, disable it for 30 minutes
+      const disableUntilTime = now + (30 * 60 * 1000); // 30 minutes from now
+      await chrome.storage.sync.set({ disableUntil: disableUntilTime });
+      await chrome.runtime.sendMessage({ action: 'disableBlocker', disableUntil: disableUntilTime });
+      
+      document.getElementById('toggleDisableBtn').textContent = 'Enable Blocker';
+      document.getElementById('toggleDisableBtn').style.background = '#4CAF50';
+      showStatus('Blocker disabled for 30 minutes', 'success');
+    }
+  } catch (error) {
+    showStatus('Error toggling blocker status', 'error');
+    console.error('Error:', error);
+  }
 }
