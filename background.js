@@ -94,12 +94,6 @@ chrome.runtime.onInstalled.addListener(async () => {
   const now = Date.now();
   
   if (disableUntil > now) {
-    // If we're still in the disable period, set up the timeout to re-enable
-    const delay = disableUntil - now;
-    setTimeout(() => {
-      enableBlocker();
-    }, delay);
-    
     // Disable the blocker
     await disableBlocker(disableUntil);
   }
@@ -141,8 +135,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   }
 });
 
-// Add a variable to track if blocking is disabled
-let isBlockerDisabled = false;
 
 // Function to disable the blocker
 async function disableBlocker(disableUntil) {
@@ -153,9 +145,6 @@ async function disableBlocker(disableUntil) {
     
     // Remove all blocking rules
     await updateDeclarativeRules([]);
-    
-    // Set the disabled flag
-    isBlockerDisabled = true;
     
     // Store the disable until time
     await chrome.storage.sync.set({ disableUntil: disableUntil });
@@ -186,9 +175,6 @@ async function enableBlocker() {
     // Re-enable all rules
     await updateDeclarativeRules(currentRules);
     
-    // Clear the disabled flag
-    isBlockerDisabled = false;
-    
     // Clear the disable until time
     await chrome.storage.sync.set({ disableUntil: 0 });
     
@@ -205,17 +191,8 @@ chrome.runtime.onStartup.addListener(async () => {
   const now = Date.now();
   
   if (disableUntil > now) {
-    // If we're still in the disable period, set up the timeout to re-enable
-    const delay = disableUntil - now;
-    setTimeout(() => {
-      enableBlocker();
-    }, delay);
-    
-    // Also disable the blocker if it's not already disabled
-    if (!isBlockerDisabled) {
-      await disableBlocker(disableUntil);
-    }
-  } else if (isBlockerDisabled) {
+    await disableBlocker(disableUntil);
+  } else {
     // If disable time has passed, re-enable the blocker
     await enableBlocker();
   }
