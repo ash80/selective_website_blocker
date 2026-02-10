@@ -151,14 +151,20 @@ async function disableBlocker(disableUntil) {
     
     console.log('Blocker disabled until:', new Date(disableUntil));
     
-    // Set a timeout to re-enable the blocker
+    // Create an alarm for re-enablement (more reliable than setTimeout in service workers)
     const now = Date.now();
-    const delay = disableUntil - now;
+    const delayInMinutes = Math.ceil((disableUntil - now) / (60 * 1000));
     
-    if (delay > 0) {
-      setTimeout(() => {
-        enableBlocker();
-      }, delay);
+    if (delayInMinutes > 0) {
+      // Clear any existing alarm first
+      await chrome.alarms.clear('reenableBlocker');
+      
+      // Create new alarm
+      await chrome.alarms.create('reenableBlocker', {
+        when: disableUntil
+      });
+      
+      console.log('Alarm set to re-enable blocker in', delayInMinutes, 'minutes');
     }
   } catch (error) {
     console.error('Error disabling blocker:', error);
@@ -178,6 +184,9 @@ async function enableBlocker() {
     // Clear the disable until time
     await chrome.storage.sync.set({ disableUntil: 0 });
     
+    // Clear any existing alarm
+    await chrome.alarms.clear('reenableBlocker');
+    
     console.log('Blocker enabled');
   } catch (error) {
     console.error('Error enabling blocker:', error);
@@ -194,6 +203,14 @@ chrome.runtime.onStartup.addListener(async () => {
     await disableBlocker(disableUntil);
   } else {
     // If disable time has passed, re-enable the blocker
+    await enableBlocker();
+  }
+});
+
+// Listen for alarm events to re-enable the blocker
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === 'reenableBlocker') {
+    console.log('Alarm triggered - re-enabling blocker');
     await enableBlocker();
   }
 });
