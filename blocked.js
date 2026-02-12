@@ -1,6 +1,9 @@
 // Display the blocked URL
-const urlParams = new URLSearchParams(window.location.search);
-const originalUrl = urlParams.get('url') || document.referrer || 'Unknown URL';
+// Extract everything after "?url=" since the original URL is not encoded
+// and may contain ? or & characters that would confuse URLSearchParams
+const search = window.location.search;
+const prefix = '?url=';
+const originalUrl = search.startsWith(prefix) ? search.substring(prefix.length) : 'Unknown URL';
 document.getElementById('blockedUrl').textContent = originalUrl;
 
 // Update page title with blocked domain

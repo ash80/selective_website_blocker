@@ -99,22 +99,53 @@ chrome.runtime.onInstalled.addListener(async () => {
   }
 });
 
+// Convert a urlFilter pattern to a regexFilter pattern
+function urlFilterToRegex(urlFilter) {
+  // Escape regex special chars except *
+  let regex = urlFilter.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+  // Replace * with .*
+  regex = regex.replace(/\*/g, '.*');
+  return regex;
+}
+
 // Update declarative net request rules
 async function updateDeclarativeRules(rules) {
   try {
     // Remove existing rules
     const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
     const ruleIds = existingRules.map(rule => rule.id);
-    
+
     if (ruleIds.length > 0) {
       await chrome.declarativeNetRequest.updateDynamicRules({
         removeRuleIds: ruleIds
       });
     }
-    
+
+    // Transform redirect rules to pass the original URL as a query parameter
+    const extensionId = chrome.runtime.id;
+    const transformedRules = rules.map(rule => {
+      if (rule.action.type === 'redirect' && rule.action.redirect.extensionPath) {
+        const { urlFilter, ...restCondition } = rule.condition;
+        return {
+          ...rule,
+          action: {
+            type: 'redirect',
+            redirect: {
+              regexSubstitution: `chrome-extension://${extensionId}${rule.action.redirect.extensionPath}?url=\\0`
+            }
+          },
+          condition: {
+            ...restCondition,
+            regexFilter: urlFilterToRegex(urlFilter)
+          }
+        };
+      }
+      return rule;
+    });
+
     // Add new rules
     await chrome.declarativeNetRequest.updateDynamicRules({
-      addRules: rules
+      addRules: transformedRules
     });
   } catch (error) {
     console.error('Error updating rules:', error);
