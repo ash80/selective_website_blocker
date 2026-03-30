@@ -78,6 +78,39 @@ const defaultRules = [
       "resourceTypes": ["main_frame"]
     }
   },
+  {
+    "id": 7,
+    "priority": 2,
+    "action": {
+      "type": "allow"
+    },
+    "condition": {
+      "urlFilter": "*youtube.com/accounts*",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 8,
+    "priority": 2,
+    "action": {
+      "type": "allow"
+    },
+    "condition": {
+      "urlFilter": "*youtube.com/shorts*",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 9,
+    "priority": 2,
+    "action": {
+      "type": "allow"
+    },
+    "condition": {
+      "urlFilter": "*youtube.com/@*",
+      "resourceTypes": ["main_frame"]
+    }
+  },
 ];
 
 // Install default rules on extension startup
